@@ -11,6 +11,8 @@ import webbrowser
 from tkinter import messagebox, simpledialog, ttk
 
 from . import api, browser_login, launcher, theme, widgets
+from . import i18n
+from .i18n import tr
 from .storage import Account, Store, data_dir, load_settings, save_settings
 
 COOKIE_HELP = (
@@ -79,12 +81,12 @@ class AddAccountDialog(Dialog):
     """Ask for a cookie, and an optional nickname."""
 
     def __init__(self, master, fonts):
-        super().__init__(master, "Paste a cookie", fonts)
+        super().__init__(master, tr("Paste a cookie"), fonts)
         self.result = None
         colours = self.colours
 
-        self.heading("Paste a cookie")
-        self.paragraph(COOKIE_HELP)
+        self.heading(tr("Paste a cookie"))
+        self.paragraph(tr(COOKIE_HELP))
 
         self.cookie = tk.Text(self.body, width=62, height=5, wrap="char",
                               font=fonts["base"],
@@ -99,7 +101,7 @@ class AddAccountDialog(Dialog):
 
         row = tk.Frame(self.body, background=colours["bg"])
         row.pack(fill="x")
-        tk.Label(row, text="Nickname (optional)", font=fonts["base"],
+        tk.Label(row, text=tr("Nickname (optional)"), font=fonts["base"],
                  background=colours["bg"],
                  foreground=colours["muted"]).pack(side="left")
         self.alias = ttk.Entry(row, width=26, font=fonts["base"])
@@ -107,10 +109,10 @@ class AddAccountDialog(Dialog):
 
         buttons = tk.Frame(self.body, background=colours["bg"])
         buttons.pack(fill="x", pady=(18, 0))
-        widgets.Button(buttons, colours, "Save", self._accept, kind="primary",
+        widgets.Button(buttons, colours, tr("Save"), self._accept, kind="primary",
                        font=fonts["bold"],
                        background=colours["bg"]).pack(side="right")
-        widgets.Button(buttons, colours, "Cancel", self.destroy, kind="ghost",
+        widgets.Button(buttons, colours, tr("Cancel"), self.destroy, kind="ghost",
                        font=fonts["base"],
                        background=colours["bg"]).pack(side="right", padx=(0, 8))
 
@@ -122,7 +124,7 @@ class AddAccountDialog(Dialog):
     def _accept(self):
         cookie = api.clean_cookie(self.cookie.get("1.0", "end"))
         if not cookie:
-            messagebox.showwarning("Paste a cookie", "Paste a cookie first.",
+            messagebox.showwarning(tr("Paste a cookie"), tr("Paste a cookie first."),
                                    parent=self)
             return
         self.result = (cookie, self.alias.get().strip())
@@ -133,12 +135,12 @@ class BrowserChooser(Dialog):
     """Which of the installed browsers to log in with."""
 
     def __init__(self, master, fonts, browsers):
-        super().__init__(master, "Log in", fonts)
+        super().__init__(master, tr("Log in"), fonts)
         self.result = None
         self._browsers = browsers
         colours = self.colours
 
-        self.heading("Open the Roblox login page in")
+        self.heading(tr("Open the Roblox login page in"))
         self._choice = tk.StringVar(value=browsers[0].name)
         for browser in browsers:
             widgets.RadioPill(self.body, colours, browser.name, self._choice,
@@ -147,10 +149,10 @@ class BrowserChooser(Dialog):
 
         buttons = tk.Frame(self.body, background=colours["bg"])
         buttons.pack(fill="x", pady=(18, 0))
-        widgets.Button(buttons, colours, "Open", self._accept, kind="primary",
+        widgets.Button(buttons, colours, tr("Open"), self._accept, kind="primary",
                        font=fonts["bold"],
                        background=colours["bg"]).pack(side="right")
-        widgets.Button(buttons, colours, "Cancel", self.destroy, kind="ghost",
+        widgets.Button(buttons, colours, tr("Cancel"), self.destroy, kind="ghost",
                        font=fonts["base"],
                        background=colours["bg"]).pack(side="right", padx=(0, 8))
         self.centre()
@@ -167,15 +169,15 @@ class WaitDialog(Dialog):
     """Shown while a browser window is open and being watched for a login."""
 
     def __init__(self, master, fonts, text, cancel_event):
-        super().__init__(master, "Waiting for Roblox", fonts)
+        super().__init__(master, tr("Waiting for Roblox"), fonts)
         self._cancel = cancel_event
 
-        self.heading("Waiting for Roblox")
+        self.heading(tr("Waiting for Roblox"))
         self.paragraph(text, width=400)
         bar = ttk.Progressbar(self.body, mode="indeterminate", length=400)
         bar.pack(fill="x", pady=(0, 16))
         bar.start(60)
-        widgets.Button(self.body, self.colours, "Cancel", self._on_cancel,
+        widgets.Button(self.body, self.colours, tr("Cancel"), self._on_cancel,
                        kind="ghost", font=fonts["base"],
                        background=self.colours["bg"]).pack(anchor="e")
         self.protocol("WM_DELETE_WINDOW", self._on_cancel)
@@ -220,6 +222,8 @@ class App(tk.Frame):
                         in tkfont.families(master) else family), size=12),
         }
 
+        i18n.set_language(self.settings.get("lang", "en"))
+        self.lang = tk.StringVar(value=i18n.current())
         self.theme_name = tk.StringVar(value=self.settings.get("theme", "dark"))
         self.place_id = tk.StringVar(value=str(self.settings.get("place_id", "")))
         self.job_id = tk.StringVar(value=str(self.settings.get("job_id", "")))
@@ -232,7 +236,7 @@ class App(tk.Frame):
         self.multi = tk.BooleanVar(value=False)
         self.browser_choice = tk.StringVar(
             value=self.settings.get("browser", "Ask each time"))
-        self.status = tk.StringVar(value="Ready")
+        self.status = tk.StringVar(value=tr("Ready"))
         self.clients = tk.StringVar(value="")
         self.subtitle = tk.StringVar(value="")
         self.page = self.settings.get("page", "accounts")
@@ -269,7 +273,7 @@ class App(tk.Frame):
             pass  # older Windows, or no dwmapi
 
     def _restore_geometry(self):
-        self.master.title("Roblox Account Manager")
+        self.master.title(tr("Roblox Account Manager"))
         self.master.minsize(widgets.px(1020), widgets.px(640))
         default = "%dx%d" % (widgets.px(1140), widgets.px(720))
         try:
@@ -329,7 +333,7 @@ class App(tk.Frame):
 
         self.nav = {}
         for name, icon, label, _hint in PAGES:
-            item = widgets.NavItem(self.sidebar, colours, icon, label,
+            item = widgets.NavItem(self.sidebar, colours, icon, tr(label),
                                    lambda n=name: self.show_page(n),
                                    font=self.fonts["base"],
                                    icon_font=self.fonts["icon"])
@@ -338,8 +342,8 @@ class App(tk.Frame):
 
         footer = tk.Frame(self.sidebar, background=colours["sidebar"])
         footer.pack(side="bottom", fill="x", padx=12, pady=16)
-        label = ("☀  Light theme" if colours["name"] == "dark"
-                 else "☾  Dark theme")
+        label = (tr("☀  Light theme") if colours["name"] == "dark"
+                 else tr("☾  Dark theme"))
         widgets.Button(footer, colours, label, self.toggle_theme, kind="ghost",
                        background=colours["sidebar"],
                        font=self.fonts["base"]).pack(fill="x")
@@ -364,8 +368,8 @@ class App(tk.Frame):
             item.set_active(key == name)
         for key, _icon, label, hint in PAGES:
             if key == name:
-                self.page_title.configure(text=label)
-                self.subtitle.set(hint)
+                self.page_title.configure(text=tr(label))
+                self.subtitle.set(tr(hint))
         if name == "accounts":
             self._update_subtitle()
 
@@ -385,22 +389,22 @@ class App(tk.Frame):
 
         top = tk.Frame(body, background=colours["card"])
         top.pack(fill="x", pady=(0, 14))
-        widgets.Button(top, colours, "Log in", self.login_browser,
+        widgets.Button(top, colours, tr("Log in"), self.login_browser,
                        kind="primary", icon="🔑", font=self.fonts["bold"],
                        icon_font=self.fonts["icon"],
                        background=colours["card"]).pack(side="left")
-        widgets.Button(top, colours, "Create account", self.create_account,
+        widgets.Button(top, colours, tr("Create account"), self.create_account,
                        icon="✨", font=self.fonts["base"],
                        icon_font=self.fonts["icon"],
                        background=colours["card"]).pack(side="left", padx=8)
-        widgets.Button(top, colours, "Paste cookie", self.add_account,
+        widgets.Button(top, colours, tr("Paste cookie"), self.add_account,
                        icon="📋", font=self.fonts["base"],
                        icon_font=self.fonts["icon"],
                        background=colours["card"]).pack(side="left")
 
         filter_box = tk.Frame(top, background=colours["card"])
         filter_box.pack(side="right")
-        tk.Label(filter_box, text="Filter", font=self.fonts["base"],
+        tk.Label(filter_box, text=tr("Filter"), font=self.fonts["base"],
                  background=colours["card"],
                  foreground=colours["muted"]).pack(side="left", padx=(0, 8))
         ttk.Entry(filter_box, textvariable=self.filter_text, width=22,
@@ -410,24 +414,25 @@ class App(tk.Frame):
         actions.pack(side="bottom", fill="x", pady=(14, 0))
         self.buttons = {}
         for key, text, icon, command, need, danger in (
-                ("refresh", "Refresh", "🔄", self.refresh_selected, "any", False),
-                ("relogin", "Log in again", "🔁", self.relogin, "one", False),
-                ("rename", "Rename", "✏", self.rename_selected, "one", False),
-                ("profile", "Profile", "🌐", self.open_profile, "one", False),
-                ("cookie", "Copy cookie", "🍪", self.copy_cookie, "one", False),
-                ("remove", "Remove", "🗑", self.remove_selected, "some", True)):
+                ("refresh", tr("Refresh"), "🔄", self.refresh_selected, "any", False),
+                ("relogin", tr("Log in again"), "🔁", self.relogin, "one", False),
+                ("rename", tr("Rename"), "✏", self.rename_selected, "one", False),
+                ("profile", tr("Profile"), "🌐", self.open_profile, "one", False),
+                ("cookie", tr("Copy cookie"), "🍪", self.copy_cookie, "one", False),
+                ("remove", tr("Remove"), "🗑", self.remove_selected, "some", True)):
             button = widgets.Button(actions, colours, text, command, icon=icon,
                                     font=self.fonts["base"], danger=danger,
                                     icon_font=self.fonts["icon"],
                                     background=colours["card"])
-            button.pack(side="left", padx=(0, 8))
+            button.pack(side="left", padx=(0, 6))
             self.buttons[key] = (button, need)
 
         table = tk.Frame(body, background=colours["card"])
         table.pack(side="top", fill="both", expand=True)
         columns = ("account", "user_id", "robux", "last_used", "status")
-        titles = {"account": "ACCOUNT", "user_id": "USER ID", "robux": "ROBUX",
-                  "last_used": "LAST LAUNCHED", "status": "STATUS"}
+        titles = {"account": tr("ACCOUNT"), "user_id": tr("USER ID"),
+                  "robux": tr("ROBUX"), "last_used": tr("LAST LAUNCHED"),
+                  "status": tr("STATUS")}
         widths = {"account": 260, "user_id": 110, "robux": 90,
                   "last_used": 160, "status": 220}
         self.tree = ttk.Treeview(table, columns=columns, show="headings",
@@ -456,13 +461,13 @@ class App(tk.Frame):
         body.columnconfigure(1, weight=1)
         body.columnconfigure(3, weight=2)
 
-        tk.Label(body, text="Place ID or game link", font=self.fonts["base"],
+        tk.Label(body, text=tr("Place ID or game link"), font=self.fonts["base"],
                  background=colours["card"],
                  foreground=colours["muted"]).grid(row=0, column=0, sticky="w")
         ttk.Entry(body, textvariable=self.place_id, font=self.fonts["base"],
                   width=20).grid(row=0, column=1, sticky="ew", padx=(12, 22))
 
-        tk.Label(body, text="Job ID / private-server code",
+        tk.Label(body, text=tr("Job ID / private-server code"),
                  font=self.fonts["base"], background=colours["card"],
                  foreground=colours["muted"]).grid(row=0, column=2, sticky="w")
         ttk.Entry(body, textvariable=self.job_id,
@@ -470,17 +475,17 @@ class App(tk.Frame):
                                                 padx=(12, 22))
 
         self.launch_button = widgets.Button(
-            body, colours, "Launch selected", self.launch_selected,
+            body, colours, tr("Launch selected"), self.launch_selected,
             kind="primary", icon="🚀", font=self.fonts["bold"],
             icon_font=self.fonts["icon"], background=colours["card"])
         self.launch_button.grid(row=0, column=4, rowspan=2, sticky="nse")
 
-        widgets.CheckBox(body, colours, "it is a private-server code",
+        widgets.CheckBox(body, colours, tr("it is a private-server code"),
                          self.private, font=self.fonts["base"],
                          background=colours["card"]).grid(
                              row=1, column=0, columnspan=2, sticky="w",
                              pady=(12, 0))
-        widgets.CheckBox(body, colours, "each account in its own server",
+        widgets.CheckBox(body, colours, tr("each account in its own server"),
                          self.separate, font=self.fonts["base"],
                          background=colours["card"]).grid(
                              row=2, column=0, columnspan=2, sticky="w",
@@ -499,27 +504,27 @@ class App(tk.Frame):
         card.pack(fill="x")
         body = card.body
 
-        tk.Label(body, text="Several clients at once",
+        tk.Label(body, text=tr("Several clients at once"),
                  font=self.fonts["section"], background=colours["card"],
                  foreground=colours["text"]).pack(anchor="w")
         tk.Message(body, width=680, justify="left", font=self.fonts["base"],
                    background=colours["card"], foreground=colours["muted"],
-                   text="A starting Roblox client waits on a named mutex to "
+                   text=tr("A starting Roblox client waits on a named mutex to "
                         "find out whether another one is already running, and "
                         "then tells it to quit. While this is on, the manager "
                         "owns that mutex, so the wait never finishes and as "
                         "many clients as your PC can handle may run. It is "
                         "released when the manager closes.\n\nIt has to be "
-                        "switched on before the first client starts.").pack(
+                        "switched on before the first client starts.")).pack(
                             anchor="w", pady=(4, 12))
-        widgets.CheckBox(body, colours, "Allow several clients at once",
+        widgets.CheckBox(body, colours, tr("Allow several clients at once"),
                          self.multi, command=self.toggle_multi,
                          font=self.fonts["base"],
                          background=colours["card"]).pack(anchor="w")
 
         row = tk.Frame(body, background=colours["card"])
         row.pack(fill="x", pady=(16, 0))
-        widgets.Button(row, colours, "Close all clients", self.close_clients,
+        widgets.Button(row, colours, tr("Close all clients"), self.close_clients,
                        icon="🛑", font=self.fonts["base"], danger=True,
                        icon_font=self.fonts["icon"],
                        background=colours["card"]).pack(side="left")
@@ -531,19 +536,19 @@ class App(tk.Frame):
         delay_card = widgets.Card(parent, colours)
         delay_card.pack(fill="x", pady=(14, 0))
         body = delay_card.body
-        tk.Label(body, text="Delay between launches",
+        tk.Label(body, text=tr("Delay between launches"),
                  font=self.fonts["section"], background=colours["card"],
                  foreground=colours["text"]).pack(anchor="w")
         tk.Message(body, width=680, justify="left", font=self.fonts["base"],
                    background=colours["card"], foreground=colours["muted"],
-                   text="Roblox rate-limits the ticket endpoint if launches "
+                   text=tr("Roblox rate-limits the ticket endpoint if launches "
                         "are hammered, and each client needs a moment to "
-                        "start.").pack(anchor="w", pady=(4, 12))
+                        "start.")).pack(anchor="w", pady=(4, 12))
         row = tk.Frame(body, background=colours["card"])
         row.pack(anchor="w")
         ttk.Spinbox(row, from_=0, to=120, width=5, textvariable=self.delay,
                     font=self.fonts["base"]).pack(side="left")
-        tk.Label(row, text="seconds", font=self.fonts["base"],
+        tk.Label(row, text=tr("seconds"), font=self.fonts["base"],
                  background=colours["card"],
                  foreground=colours["muted"]).pack(side="left", padx=(10, 0))
 
@@ -554,12 +559,12 @@ class App(tk.Frame):
 
         card = widgets.Card(parent, colours)
         card.pack(fill="x")
-        tk.Label(card.body, text="Appearance", font=self.fonts["section"],
+        tk.Label(card.body, text=tr("Appearance"), font=self.fonts["section"],
                  background=colours["card"],
                  foreground=colours["text"]).pack(anchor="w", pady=(0, 10))
         row = tk.Frame(card.body, background=colours["card"])
         row.pack(anchor="w")
-        for value, label in (("dark", "Dark"), ("light", "Light")):
+        for value, label in (("dark", tr("Dark")), ("light", tr("Light"))):
             widgets.RadioPill(row, colours, label, self.theme_name, value,
                               command=lambda: self._apply_theme(
                                   self.theme_name.get()),
@@ -567,9 +572,24 @@ class App(tk.Frame):
                               background=colours["card"]).pack(side="left",
                                                                padx=(0, 10))
 
+        language = widgets.Card(parent, colours)
+        language.pack(fill="x", pady=(14, 0))
+        tk.Label(language.body, text=tr("Language"),
+                 font=self.fonts["section"], background=colours["card"],
+                 foreground=colours["text"]).pack(anchor="w", pady=(0, 10))
+        row = tk.Frame(language.body, background=colours["card"])
+        row.pack(anchor="w")
+        for value, label in (("en", "English"), ("ru", "Русский")):
+            widgets.RadioPill(row, colours, label, self.lang, value,
+                              command=lambda: self._apply_language(
+                                  self.lang.get()),
+                              font=self.fonts["base"],
+                              background=colours["card"]).pack(side="left",
+                                                               padx=(0, 10))
+
         browsers = widgets.Card(parent, colours)
         browsers.pack(fill="x", pady=(14, 0))
-        tk.Label(browsers.body, text="Login browser", font=self.fonts["section"],
+        tk.Label(browsers.body, text=tr("Login browser"), font=self.fonts["section"],
                  background=colours["card"],
                  foreground=colours["text"]).pack(anchor="w", pady=(0, 10))
         row = tk.Frame(browsers.body, background=colours["card"])
@@ -577,14 +597,14 @@ class App(tk.Frame):
         names = (["Ask each time"]
                  + [b.name for b in browser_login.available_browsers()])
         for name in names:
-            widgets.RadioPill(row, colours, name, self.browser_choice, name,
+            widgets.RadioPill(row, colours, tr(name), self.browser_choice, name,
                               font=self.fonts["base"],
                               background=colours["card"]).pack(side="left",
                                                                padx=(0, 10))
 
         data = widgets.Card(parent, colours)
         data.pack(fill="x", pady=(14, 0))
-        tk.Label(data.body, text="Data", font=self.fonts["section"],
+        tk.Label(data.body, text=tr("Data"), font=self.fonts["section"],
                  background=colours["card"],
                  foreground=colours["text"]).pack(anchor="w", pady=(0, 6))
         tk.Label(data.body, text=data_dir(), font=self.fonts["small"],
@@ -592,11 +612,11 @@ class App(tk.Frame):
                  foreground=colours["muted"]).pack(anchor="w", pady=(0, 12))
         row = tk.Frame(data.body, background=colours["card"])
         row.pack(anchor="w")
-        widgets.Button(row, colours, "Open data folder",
+        widgets.Button(row, colours, tr("Open data folder"),
                        lambda: self._open_folder(data_dir()), icon="📁",
                        font=self.fonts["base"], icon_font=self.fonts["icon"],
                        background=colours["card"]).pack(side="left", padx=(0, 8))
-        widgets.Button(row, colours, "Open browser profiles",
+        widgets.Button(row, colours, tr("Open browser profiles"),
                        lambda: self._open_folder(browser_login.profiles_dir()),
                        icon="🗂", font=self.fonts["base"],
                        icon_font=self.fonts["icon"],
@@ -622,7 +642,7 @@ class App(tk.Frame):
             "itself.\n\n"
             "Alt accounts are allowed on Roblox; automating them is not. This "
             "is a launcher — what the accounts do afterwards is on you.")
-        tk.Message(card.body, text=text, width=740, justify="left",
+        tk.Message(card.body, text=tr(text), width=740, justify="left",
                    font=self.fonts["base"], background=colours["card"],
                    foreground=colours["muted"]).pack(anchor="w")
 
@@ -650,7 +670,28 @@ class App(tk.Frame):
         for iid in selection:
             if self.tree.exists(iid):
                 self.tree.selection_add(iid)
-        self._set_status("Switched to the %s theme" % name)
+        self._set_status(tr("Switched to the %s theme") % name)
+
+    def _apply_language(self, lang):
+        if lang == i18n.current():
+            return
+        i18n.set_language(lang)
+        self.settings["lang"] = i18n.current()
+        # the whole window is rebuilt so every tr(...) is re-read, exactly
+        # the way the theme switch already works
+        selection = list(self.tree.selection())
+        page = self.page
+        self.colours = theme.apply(self.master, self.colours["name"],
+                                   self.fonts)
+        for child in list(self.winfo_children()):
+            child.destroy()
+        self.page = page
+        self._title_bar_theme()
+        self._build()
+        self.refresh_table()
+        for iid in selection:
+            if self.tree.exists(iid):
+                self.tree.selection_add(iid)
 
     def toggle_theme(self):
         other = "light" if self.colours["name"] == "dark" else "dark"
@@ -662,28 +703,28 @@ class App(tk.Frame):
     def _build_menus(self):
         colours = self.colours
         self.menu = tk.Menu(self, tearoff=0)
-        for label, command in (("Launch", self.launch_selected),
+        for label, command in ((tr("Launch"), self.launch_selected),
                                (None, None),
-                               ("Log in again", self.relogin),
-                               ("Refresh", self.refresh_selected),
-                               ("Rename…", self.rename_selected),
-                               ("Open profile", self.open_profile),
-                               ("Copy cookie", self.copy_cookie),
+                               (tr("Log in again"), self.relogin),
+                               (tr("Refresh"), self.refresh_selected),
+                               (tr("Rename…"), self.rename_selected),
+                               (tr("Open profile"), self.open_profile),
+                               (tr("Copy cookie"), self.copy_cookie),
                                (None, None),
-                               ("Remove", self.remove_selected)):
+                               (tr("Remove"), self.remove_selected)):
             if label is None:
                 self.menu.add_separator()
             else:
                 self.menu.add_command(label=label, command=command)
 
         self.entry_menu = tk.Menu(self, tearoff=0)
-        for label, event in (("Paste", "<<Paste>>"), ("Copy", "<<Copy>>"),
-                             ("Cut", "<<Cut>>")):
+        for label, event in ((tr("Paste"), "<<Paste>>"), (tr("Copy"), "<<Copy>>"),
+                             (tr("Cut"), "<<Cut>>")):
             self.entry_menu.add_command(
                 label=label, command=lambda e=event: self._edit(e))
         self.entry_menu.add_separator()
         self.entry_menu.add_command(
-            label="Select all",
+            label=tr("Select all"),
             command=lambda: self._select_all(self._edit_target))
 
         for menu in (self.menu, self.entry_menu):
@@ -759,11 +800,11 @@ class App(tk.Frame):
         if (self.multi.get() and launcher.owns_singleton()
                 and launcher.running_clients() > 1):
             if not messagebox.askyesno(
-                    "Close the manager?",
-                    "The manager is what holds the one-client limit open. "
-                    "Closing it hands the limit back to Roblox: the windows "
-                    "that are open stay open, but the next client to start "
-                    "will close them.\n\nClose anyway?"):
+                    tr("Close the manager?"),
+                    tr("The manager is what holds the one-client limit open. "
+                       "Closing it hands the limit back to Roblox: the windows "
+                       "that are open stay open, but the next client to start "
+                       "will close them.\n\nClose anyway?")):
                 return
         self.settings.update({
             "geometry": self.master.winfo_geometry(),
@@ -773,6 +814,7 @@ class App(tk.Frame):
             "separate_servers": self.separate.get(),
             "delay": self.delay.get(),
             "theme": self.colours["name"],
+            "lang": i18n.current(),
             "browser": self.browser_choice.get(),
             "page": self.page,
             "sort_column": self._sort[0],
@@ -806,7 +848,7 @@ class App(tk.Frame):
                     self._wait.close()
                     self._wait = None
             elif kind == "error":
-                messagebox.showerror("Roblox Account Manager", payload[0])
+                messagebox.showerror(tr("Roblox Account Manager"), payload[0])
         self.after(120, self._drain_events)
 
     def _set_status(self, text):
@@ -815,12 +857,12 @@ class App(tk.Frame):
     def _tick_client_count(self):
         self._client_count = launcher.running_clients()
         if not launcher.multi_instance_enabled():
-            multi = "one client at a time"
+            multi = tr("one client at a time")
         elif launcher.owns_singleton():
-            multi = "several allowed — the manager holds the limit"
+            multi = tr("several allowed — the manager holds the limit")
         else:
-            multi = "several NOT allowed yet — Roblox still holds the limit"
-        text = "%d Roblox client(s) running  ·  %s" % (self._client_count, multi)
+            multi = tr("several NOT allowed yet — Roblox still holds the limit")
+        text = tr("%d Roblox client(s) running  ·  %s") % (self._client_count, multi)
         self.clients.set(text)
         if hasattr(self, "clients_label") and self.clients_label.winfo_exists():
             self.clients_label.configure(text=text)
@@ -899,11 +941,11 @@ class App(tk.Frame):
         total = len(self.store.accounts)
         shown = len(self.visible_accounts())
         if not total:
-            text = "No accounts yet"
+            text = tr("No accounts yet")
         elif shown != total:
-            text = "%d of %d accounts" % (shown, total)
+            text = tr("%d of %d accounts") % (shown, total)
         else:
-            text = "%d account%s" % (total, "" if total == 1 else "s")
+            text = (tr("%d account") if total == 1 else tr("%d accounts")) % total
         self.subtitle.set(text)
 
     def selected_accounts(self):
@@ -926,18 +968,18 @@ class App(tk.Frame):
         self.launch_button.set_enabled(bool(count))
         if count > 1:
             self.launch_hint.configure(
-                text="%d accounts selected — they start one after another"
+                text=tr("%d accounts selected — they start one after another")
                      % count)
         elif count == 1:
             self.launch_hint.configure(text="")
         else:
-            self.launch_hint.configure(text="Select an account to launch it")
+            self.launch_hint.configure(text=tr("Select an account to launch it"))
 
     def _require_one(self):
         chosen = self.selected_accounts()
         if len(chosen) != 1:
-            messagebox.showinfo("Roblox Account Manager",
-                                "Select exactly one account.")
+            messagebox.showinfo(tr("Roblox Account Manager"),
+                                tr("Select exactly one account."))
             return None
         return chosen[0]
 
@@ -964,7 +1006,7 @@ class App(tk.Frame):
         if code:
             self.job_id.set(code.group(1))
             self.private.set(True)
-            self._set_status("Private-server link recognised")
+            self._set_status(tr("Private-server link recognised"))
         if match:
             self.place_id.set(match.group(1))
 
@@ -975,10 +1017,11 @@ class App(tk.Frame):
         browsers = browser_login.available_browsers()
         if not browsers:
             messagebox.showerror(
-                "Log in",
-                "No supported browser was found.\n\n"
-                "Firefox, Chrome, Edge or Brave is needed to log in from here. "
-                "Install one of them, or use 'Paste cookie' instead.")
+                tr("Log in"),
+                tr("No supported browser was found.\n\n"
+                   "Firefox, Chrome, Edge or Brave is needed to log in "
+                   "from here. Install one of them, or use 'Paste "
+                   "cookie' instead."))
             return None
         chosen = self.browser_choice.get()
         for browser in browsers:
@@ -991,21 +1034,21 @@ class App(tk.Frame):
     def login_browser(self):
         self._browser_flow(browser_login.LOGIN_URL, profile=None,
                            account=None, close_when_done=True,
-                           waiting="Log in to Roblox in the browser window.")
+                           waiting=tr("Log in to Roblox in the browser window."))
 
     def create_account(self):
         if not messagebox.askyesno(
-                "Create account",
-                "This opens Roblox's own sign-up page in a fresh browser "
-                "profile. You fill the form in yourself — the manager does "
-                "not type anything and does not touch the captcha.\n\n"
-                "As soon as the new account is signed in, it is added to the "
-                "list. Roblox allows alt accounts, but creating them in bulk "
-                "or using them for botting is against its rules.\n\nContinue?"):
+                tr("Create account"),
+                tr("This opens Roblox's own sign-up page in a fresh browser "
+                   "profile. You fill the form in yourself — the manager does "
+                   "not type anything and does not touch the captcha.\n\n"
+                   "As soon as the new account is signed in, it is added to the "
+                   "list. Roblox allows alt accounts, but creating them in bulk "
+                   "or using them for botting is against its rules.\n\nContinue?")):
             return
         self._browser_flow(browser_login.SIGNUP_URL, profile=None,
                            account=None, close_when_done=False,
-                           waiting="Create the account in the browser window.")
+                           waiting=tr("Create the account in the browser window."))
 
     def relogin(self):
         account = self._require_one()
@@ -1014,7 +1057,7 @@ class App(tk.Frame):
         self._browser_flow(browser_login.LOGIN_URL,
                            profile=account.profile_dir or None,
                            account=account, close_when_done=True,
-                           waiting="Log in as %s in the browser window."
+                           waiting=tr("Log in as %s in the browser window.")
                                    % account.label)
 
     def _browser_flow(self, url, profile, account, close_when_done, waiting):
@@ -1024,7 +1067,7 @@ class App(tk.Frame):
         cancel = threading.Event()
         self._wait = WaitDialog(
             self.master, self.fonts,
-            "%s\n\nThe account is added by itself once Roblox signs you in."
+            tr("%s\n\nThe account is added by itself once Roblox signs you in.")
             % waiting, cancel)
         self._run(self._browser_worker, browser, url, profile, account,
                   close_when_done, cancel)
@@ -1035,10 +1078,10 @@ class App(tk.Frame):
             session = browser_login.open_session(browser, url, profile)
         except OSError as exc:
             self._post("wait_done")
-            self._post("error", "Could not start %s: %s" % (browser.name, exc))
+            self._post("error", tr("Could not start %s: %s") % (browser.name, exc))
             return
 
-        self._post("status", "Waiting for the login in %s…" % browser.name)
+        self._post("status", tr("Waiting for the login in %s…") % browser.name)
         cookie = None
         deadline = time.time() + 15 * 60
         while time.time() < deadline and not cancel.is_set():
@@ -1056,9 +1099,10 @@ class App(tk.Frame):
         self._post("wait_done")
         if cancel.is_set() or not cookie:
             session.close()
-            reason = ("cancelled" if cancel.is_set()
-                      else "the browser was closed before the login finished")
-            self._post("status", "Login %s" % reason)
+            reason = (tr("cancelled") if cancel.is_set()
+                      else tr("the browser was closed before the login "
+                              "finished"))
+            self._post("status", tr("Login %s") % reason)
             return
 
         try:
@@ -1066,14 +1110,14 @@ class App(tk.Frame):
         except api.RobloxError as exc:
             session.close()
             self._post("status", "Ready")
-            self._post("error", "Captured a cookie but Roblox rejected it: %s"
+            self._post("error", tr("Captured a cookie but Roblox rejected it: %s")
                        % exc)
             return
 
         if account and int(user["id"]) != account.user_id:
             session.close()
             self._post("status", "Ready")
-            self._post("error", "You logged in as %s, but %s was selected."
+            self._post("error", tr("You logged in as %s, but %s was selected.")
                        % (user.get("name"), account.username))
             return
 
@@ -1090,7 +1134,7 @@ class App(tk.Frame):
         saved = self.store.add_or_update(fresh)
         if close_when_done:
             session.close()
-        self._post("status", "Signed in as %s" % saved.label)
+        self._post("status", tr("Signed in as %s") % saved.label)
         self._post("refresh")
 
     # --------------------------------------------------------------- actions
@@ -1100,7 +1144,7 @@ class App(tk.Frame):
         if not dialog.result:
             return
         cookie, alias = dialog.result
-        self._set_status("Checking cookie…")
+        self._set_status(tr("Checking cookie…"))
         self._run(self._add_account_worker, cookie, alias)
 
     def _add_account_worker(self, cookie, alias):
@@ -1108,7 +1152,7 @@ class App(tk.Frame):
             user = api.authenticated_user(cookie)
         except api.RobloxError as exc:
             self._post("status", "Ready")
-            self._post("error", "Could not add the account: %s" % exc)
+            self._post("error", tr("Could not add the account: %s") % exc)
             return
         account = Account(username=user.get("name", "?"),
                           user_id=int(user["id"]),
@@ -1121,14 +1165,14 @@ class App(tk.Frame):
         if balance is not None:
             account.note = "R$ %s" % balance
         self.store.add_or_update(account)
-        self._post("status", "Added %s" % account.label)
+        self._post("status", tr("Added %s") % account.label)
         self._post("refresh")
 
     def refresh_selected(self):
         chosen = self.selected_accounts() or list(self.store.accounts)
         if not chosen:
             return
-        self._set_status("Checking %d account(s)…" % len(chosen))
+        self._set_status(tr("Checking %d account(s)…") % len(chosen))
         self._run(self._refresh_worker, chosen)
 
     def _refresh_worker(self, accounts):
@@ -1145,14 +1189,14 @@ class App(tk.Frame):
                 account.last_status = str(exc)
             self._post("refresh")
         self.store.save()
-        self._post("status", "Checked %d account(s)" % len(accounts))
+        self._post("status", tr("Checked %d account(s)") % len(accounts))
 
     def rename_selected(self):
         account = self._require_one()
         if not account:
             return
         alias = simpledialog.askstring(
-            "Rename", "Nickname for %s:" % account.username,
+            tr("Rename"), tr("Nickname for %s:") % account.username,
             initialvalue=account.alias, parent=self.master)
         if alias is None:
             return
@@ -1165,13 +1209,13 @@ class App(tk.Frame):
         if not account:
             return
         if not messagebox.askyesno(
-                "Copy cookie",
-                "This cookie is a full login to %s. Put it on the clipboard?"
+                tr("Copy cookie"),
+                tr("This cookie is a full login to %s. Put it on the clipboard?")
                 % account.label):
             return
         self.clipboard_clear()
         self.clipboard_append(account.cookie)
-        self._set_status("Cookie for %s copied to the clipboard" % account.label)
+        self._set_status(tr("Cookie for %s copied to the clipboard") % account.label)
 
     def open_profile(self):
         account = self._require_one()
@@ -1185,28 +1229,28 @@ class App(tk.Frame):
             return
         names = ", ".join(a.label for a in chosen)
         if not messagebox.askyesno(
-                "Remove", "Remove %s from the manager?\n"
-                          "(The Roblox account itself is untouched.)" % names):
+                tr("Remove"), tr("Remove %s from the manager?\n"
+                    "(The Roblox account itself is untouched.)") % names):
             return
         for account in chosen:
             self.store.remove(account.user_id)
         self.refresh_table()
-        self._set_status("Removed %s" % names)
+        self._set_status(tr("Removed %s") % names)
 
     def toggle_multi(self):
         try:
             if self.multi.get():
                 ours = launcher.enable_multi_instance()
-                self._set_status("Several clients allowed while the manager "
-                                 "stays open")
+                self._set_status(tr("Several clients allowed while the manager stays "
+                                    "open"))
                 if not ours:
                     self._warn_roblox_got_there_first()
             else:
                 launcher.disable_multi_instance()
-                self._set_status("Back to one client at a time")
+                self._set_status(tr("Back to one client at a time"))
         except (OSError, RuntimeError) as exc:
             self.multi.set(False)
-            messagebox.showerror("Several clients", str(exc))
+            messagebox.showerror(tr("Several clients"), str(exc))
 
     def _warn_roblox_got_there_first(self):
         """Roblox created the singleton objects before the manager did.
@@ -1217,14 +1261,14 @@ class App(tk.Frame):
         launch after that is free of the limit.
         """
         if not messagebox.askyesno(
-                "Several clients",
-                "Roblox was already running when this was switched on, and "
-                "that client still holds the one-client limit itself — so the "
-                "next launch would close it.\n\n"
-                "The manager is holding the limit open now, so closing the "
-                "clients that are open and launching them again from here is "
-                "all it takes.\n\n"
-                "Close the running client(s) now?"):
+                tr("Several clients"),
+                tr("Roblox was already running when this was switched on, and "
+                   "that client still holds the one-client limit itself — so the "
+                   "next launch would close it.\n\n"
+                   "The manager is holding the limit open now, so closing the "
+                   "clients that are open and launching them again from here is "
+                   "all it takes.\n\n"
+                   "Close the running client(s) now?")):
             return
         count = launcher.close_all_clients()
         for _ in range(20):          # give the processes a moment to go
@@ -1232,48 +1276,48 @@ class App(tk.Frame):
                 break
             time.sleep(0.25)
         if launcher.reacquire():
-            self._set_status("Closed %d client(s) — the manager holds the "
-                             "limit now, launch again from here" % count)
+            self._set_status(tr("Closed %d client(s) — the manager holds the limit "
+                                "now, launch again from here") % count)
         else:
-            self._set_status("Closed %d client(s), but the limit is still "
-                             "held elsewhere" % count)
+            self._set_status(tr("Closed %d client(s), but the limit is still held "
+                                "elsewhere") % count)
 
     def close_clients(self):
         count = launcher.close_all_clients()
-        self._set_status("Closed %d client(s)" % count)
+        self._set_status(tr("Closed %d client(s)") % count)
 
     def launch_selected(self):
         chosen = self.selected_accounts()
         if not chosen:
-            messagebox.showinfo("Launch", "Select at least one account.")
+            messagebox.showinfo(tr("Launch"), tr("Select at least one account."))
             return
         place = self.place_id.get().strip()
         if not place.isdigit():
             messagebox.showinfo(
-                "Launch",
-                "Enter the place ID, or paste the game's link and let the "
-                "manager pick the ID out of it.\n\n"
-                "The place ID is the number in "
-                "roblox.com/games/<place id>/...")
+                tr("Launch"),
+                tr("Enter the place ID, or paste the game's link and let the "
+                   "manager pick the ID out of it.\n\n"
+                   "The place ID is the number in "
+                   "roblox.com/games/<place id>/..."))
             return
         if len(chosen) > 1 and not self.multi.get():
             if not messagebox.askyesno(
-                    "Launch",
-                    "Several accounts are selected but only one client at a "
-                    "time is allowed, so each launch would replace the "
-                    "previous one.\n\nAllow several clients?"):
+                    tr("Launch"),
+                    tr("Several accounts are selected but only one client at a "
+                       "time is allowed, so each launch would replace the "
+                       "previous one.\n\nAllow several clients?")):
                 return
             self.multi.set(True)
             self.toggle_multi()
         if self.multi.get() and not launcher.owns_singleton():
             if not messagebox.askyesno(
-                    "Several clients",
-                    "The one-client limit is not held by the manager right "
-                    "now, so this launch would close the client that is "
-                    "already open.\n\n"
-                    "That happens when Roblox was started before the manager, "
-                    "or the manager was closed in between.\n\n"
-                    "Launch anyway?"):
+                    tr("Several clients"),
+                    tr("The one-client limit is not held by the manager right "
+                       "now, so this launch would close the client that is "
+                       "already open.\n\n"
+                       "That happens when Roblox was started before the manager, "
+                       "or the manager was closed in between.\n\n"
+                       "Launch anyway?")):
                 self._warn_roblox_got_there_first()
                 return
         try:
@@ -1293,15 +1337,15 @@ class App(tk.Frame):
         try:
             servers = api.public_servers(place_id)
         except api.RobloxError as exc:
-            self._post("status", "Could not list servers (%s) — letting "
-                                 "Roblox choose" % exc)
+            self._post("status", tr("Could not list servers (%s) — letting Roblox "
+                                    "choose") % exc)
             return []
         fresh = [s["id"] for s in servers if s["id"] not in self._used_jobs]
         chosen = fresh[:count]
         self._used_jobs.update(chosen)
         if len(chosen) < count:
-            self._post("status", "Only %d free server(s) found — the rest "
-                                 "join wherever Roblox puts them"
+            self._post("status", tr("Only %d free server(s) found — the rest join "
+                                    "wherever Roblox puts them")
                        % len(chosen))
         return chosen
 
@@ -1311,7 +1355,7 @@ class App(tk.Frame):
         if separate and not job:
             servers = self._pick_servers(place_id, len(accounts))
         for index, account in enumerate(accounts):
-            self._post("status", "Launching %s… (%d of %d)"
+            self._post("status", tr("Launching %s… (%d of %d)")
                        % (account.label, index + 1, len(accounts)))
             try:
                 ticket = api.authentication_ticket(account.cookie)
@@ -1332,7 +1376,7 @@ class App(tk.Frame):
             if index < len(accounts) - 1 and delay > 0:
                 time.sleep(delay)
         self.store.save()
-        self._post("status", "Launched %d account(s)" % len(accounts))
+        self._post("status", tr("Launched %d account(s)") % len(accounts))
         self._post("refresh")
 
 
