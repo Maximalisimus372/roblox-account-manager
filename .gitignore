@@ -23,3 +23,7 @@ profiles/
 .idea/
 Thumbs.db
 desktop.ini
+
+# Per-buyer releases: the archives and, crucially, the password ledger
+# must never be committed or shared.
+releases/
