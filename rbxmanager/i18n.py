@@ -69,6 +69,9 @@ _RU = {
     "Copy cookie": "Копировать cookie",
     "Remove": "Удалить",
     "Launch": "Запустить",
+    "A launch is already in progress…": "Запуск уже идёт…",
+    "%s is already launched — Roblox will kick the duplicate. Launch anyway?":
+        "%s уже запущен — Roblox выкинет дубликат. Всё равно запустить?",
 
     # launch card
     "Place ID or game link": "Place ID или ссылка на игру",

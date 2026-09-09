@@ -207,6 +207,8 @@ class App(tk.Frame):
         self._client_count = 0
         self._wait = None
         self._edit_target = None
+        self._launching = False
+        self._launched_ids = set()
 
         family = ("Segoe UI" if "Segoe UI" in tkfont.families(master)
                   else tkfont.nametofont("TkDefaultFont").cget("family"))
@@ -847,6 +849,9 @@ class App(tk.Frame):
                 if self._wait:
                     self._wait.close()
                     self._wait = None
+            elif kind == "launch_done":
+                self._launching = False
+                self._sync_buttons()
             elif kind == "error":
                 messagebox.showerror(tr("Roblox Account Manager"), payload[0])
         self.after(120, self._drain_events)
@@ -1287,10 +1292,26 @@ class App(tk.Frame):
         self._set_status(tr("Closed %d client(s)") % count)
 
     def launch_selected(self):
+        # A launch runs in a background thread with a pause between accounts,
+        # so a second click while it is going would start a second thread and
+        # launch the same accounts again — Roblox then kicks the duplicate
+        # session (the same account cannot be in two places). One batch at a
+        # time prevents that.
+        if getattr(self, "_launching", False):
+            self._set_status(tr("A launch is already in progress…"))
+            return
         chosen = self.selected_accounts()
         if not chosen:
             messagebox.showinfo(tr("Launch"), tr("Select at least one account."))
             return
+        # a defensive de-dupe: never launch the same account twice in one batch
+        seen = set()
+        unique = []
+        for account in chosen:
+            if account.user_id not in seen:
+                seen.add(account.user_id)
+                unique.append(account)
+        chosen = unique
         place = self.place_id.get().strip()
         if not place.isdigit():
             messagebox.showinfo(
@@ -1320,10 +1341,20 @@ class App(tk.Frame):
                        "Launch anyway?")):
                 self._warn_roblox_got_there_first()
                 return
+        already = [a for a in chosen if a.user_id in self._launched_ids]
+        if already:
+            names = ", ".join(a.label for a in already)
+            if not messagebox.askyesno(
+                    tr("Launch"),
+                    tr("%s is already launched — Roblox will kick the "
+                       "duplicate. Launch anyway?") % names):
+                return
         try:
             delay = float(self.delay.get())
         except ValueError:
             delay = 6.0
+        self._launching = True
+        self.launch_button.set_enabled(False)
         self._run(self._launch_worker, chosen, int(place),
                   self.job_id.get().strip(), self.private.get(), delay,
                   self.separate.get())
@@ -1369,6 +1400,7 @@ class App(tk.Frame):
                 launcher.launch(api.launch_uri(ticket, url, tracker_id=tracker))
                 account.last_used = time.time()
                 account.last_status = "launched"
+                self._launched_ids.add(account.user_id)
             except (api.RobloxError, OSError, RuntimeError, ValueError) as exc:
                 account.last_status = str(exc)
                 self._post("error", "%s: %s" % (account.label, exc))
@@ -1377,6 +1409,7 @@ class App(tk.Frame):
                 time.sleep(delay)
         self.store.save()
         self._post("status", tr("Launched %d account(s)") % len(accounts))
+        self._post("launch_done")
         self._post("refresh")
 
 
