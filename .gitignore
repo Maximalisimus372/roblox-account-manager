@@ -1,0 +1,25 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+
+# PyInstaller
+build/
+dist/
+*.spec
+
+# Nothing from the account list should ever end up here. It lives in
+# %LOCALAPPDATA%\RobloxAccountManager, but keep these patterns as a guard
+# in case anyone ever copies one next to the code.
+accounts.json
+settings.json
+profiles/
+*.ROBLOSECURITY
+
+# Editors / OS
+.vscode/
+.idea/
+Thumbs.db
+desktop.ini
