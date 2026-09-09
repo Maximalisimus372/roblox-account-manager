@@ -1382,6 +1382,19 @@ class App(tk.Frame):
 
     def _launch_worker(self, accounts, place_id, job, is_private, delay,
                        separate=False):
+        # Whatever happens in here, the launch lock must be released and the
+        # button re-enabled — otherwise a single failure would wedge the app
+        # so nothing can be launched again.
+        try:
+            self._launch_all(accounts, place_id, job, is_private, delay,
+                             separate)
+        except Exception as exc:  # last-resort guard, never leave it wedged
+            self._post("error", "%s" % exc)
+        finally:
+            self._post("launch_done")
+
+    def _launch_all(self, accounts, place_id, job, is_private, delay,
+                    separate=False):
         servers = []
         if separate and not job:
             servers = self._pick_servers(place_id, len(accounts))
@@ -1409,7 +1422,6 @@ class App(tk.Frame):
                 time.sleep(delay)
         self.store.save()
         self._post("status", tr("Launched %d account(s)") % len(accounts))
-        self._post("launch_done")
         self._post("refresh")
 
 
