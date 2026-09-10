@@ -115,6 +115,8 @@ _RU = {
     "Several clients at once": "Несколько клиентов сразу",
     "Allow several clients at once": "Разрешить несколько клиентов сразу",
     "Close all clients": "Закрыть все клиенты",
+    "Force-close all %d running Roblox window(s)?":
+        "Принудительно закрыть все запущенные окна Roblox (%d)?",
     "Delay between launches": "Задержка между запусками",
     "seconds": "секунд",
     ("A starting Roblox client waits on a named mutex to find out whether "

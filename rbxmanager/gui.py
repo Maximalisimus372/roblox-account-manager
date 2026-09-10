@@ -1288,6 +1288,11 @@ class App(tk.Frame):
                                 "elsewhere") % count)
 
     def close_clients(self):
+        running = launcher.running_clients()
+        if running and not messagebox.askyesno(
+                tr("Close all clients"),
+                tr("Force-close all %d running Roblox window(s)?") % running):
+            return
         count = launcher.close_all_clients()
         self._set_status(tr("Closed %d client(s)") % count)
 
